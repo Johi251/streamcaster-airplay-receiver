@@ -1,9 +1,8 @@
-# Add project-specific ProGuard rules here. By default, the flags in this file
-# are appended to the built-in ProGuard rules. Keep UxPlay / ExoPlayer symbols.
+# Keep JNI callback interface (called from native code)
+-keep class io.github.jqssun.airplay.bridge.RaopCallbackHandler { *; }
+-keep class * implements io.github.jqssun.airplay.bridge.RaopCallbackHandler { *; }
+-keep class io.github.jqssun.airplay.bridge.LogListener { *; }
+-keep class * implements io.github.jqssun.airplay.bridge.LogListener { *; }
 
-# OkHttp
--keep class okhttp3.** { *; }
--keep interface okhttp3.** { *; }
-
-# Keep native AirPlay bridge method names (UxPlay JNI)
--keep class com.streamcaster.receiver.** { *; }
+# Keep NativeBridge native methods
+-keep class io.github.jqssun.airplay.bridge.NativeBridge { *; }

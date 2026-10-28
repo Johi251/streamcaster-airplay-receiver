@@ -72,6 +72,8 @@ Voraussetzungen:
 - Android SDK mit `platforms;android-37.0`, `build-tools;37.0.0`
 - NDK `27.0.12077973`
 - CMake `3.22.1`
+- **Build-Pfad ohne Leerzeichen** (FFmpegs `configure` lehnt Leerzeichen im
+  Quellpfad ab; auf Windows z. B. unter `%TEMP%\scbuild` bauen)
 
 ```bash
 git clone --recursive https://github.com/Johi251/streamcaster-airplay-receiver.git

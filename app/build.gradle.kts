@@ -25,7 +25,7 @@ android {
     if (localProps.containsKey("storeFile")) {
         signingConfigs {
             create("release") {
-                storeFile = file(localProps.getProperty("storeFile"))
+                storeFile = rootProject.file(localProps.getProperty("storeFile"))
                 storePassword = localProps.getProperty("storePassword")
                 keyAlias = localProps.getProperty("keyAlias")
                 keyPassword = localProps.getProperty("keyPassword")

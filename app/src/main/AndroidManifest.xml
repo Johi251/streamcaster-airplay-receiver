@@ -34,7 +34,7 @@
         android:theme="@style/Theme.AirPlayServer">
 
         <activity
-            android:name=".HubActivity"
+            android:name="com.streamcaster.receiver.HubActivity"
             android:exported="true"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.StreamCaster"
@@ -47,7 +47,7 @@
         </activity>
 
         <activity
-            android:name=".CastPlayerActivity"
+            android:name="com.streamcaster.receiver.CastPlayerActivity"
             android:exported="false"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.StreamCaster"

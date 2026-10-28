@@ -31,3 +31,6 @@ Thumbs.db
 
 # Kotlin build cache
 .kotlin/
+
+# Local release artifact (published as GitHub release asset)
+dist/

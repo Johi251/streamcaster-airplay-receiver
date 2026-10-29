@@ -33,11 +33,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AirPlayServer">
 
+        <!-- singleTask: this activity owns the room code and the signaling
+             session. Launched twice (launcher tile, Downloader's "Open", adb),
+             a second instance joins the same code, gets role_taken, and the two
+             copies stack on screen. One instance, always. -->
         <activity
             android:name="com.streamcaster.receiver.HubActivity"
             android:exported="true"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.StreamCaster"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

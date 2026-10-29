@@ -41,8 +41,8 @@ android {
         // minSdk 28 made the package fail to parse there. 24 covers Fire OS 6/7/8.
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         externalNativeBuild {
             cmake {

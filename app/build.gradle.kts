@@ -11,9 +11,11 @@ val localProps = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
 }
 
-// Fire TV Stick 4K and newer are 64-bit. Shipping one ABI keeps the APK small
-// and the native (OpenSSL/FFmpeg/UxPlay) build time manageable.
-val allAbis = listOf("arm64-v8a")
+// Most Fire TV Sticks run a 32-bit userspace (armeabi-v7a) even on 64-bit SoCs —
+// the Fire TV Stick 4K 1st gen reports ro.product.cpu.abi=armeabi-v7a. Shipping
+// only arm64-v8a made the APK uninstallable on those devices, so both ABIs are
+// bundled. Costs ~5 MB more and roughly doubles the native build time.
+val allAbis = listOf("arm64-v8a", "armeabi-v7a")
 
 android {
     // The Kotlin package stays upstream-compatible: the JNI bridge binds native
@@ -35,10 +37,12 @@ android {
 
     defaultConfig {
         applicationId = "com.streamcaster.receiver"
-        minSdk = 28
+        // Fire OS 6 (Fire TV Stick 4K 1st gen) is Android 7.1.2 = API 25, so
+        // minSdk 28 made the package fail to parse there. 24 covers Fire OS 6/7/8.
+        minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         externalNativeBuild {
             cmake {

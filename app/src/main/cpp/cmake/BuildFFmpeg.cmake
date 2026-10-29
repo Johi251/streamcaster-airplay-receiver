@@ -55,6 +55,32 @@ if(SANITIZE)
     set(_ffmpeg_sanitize "--extra-cflags=${_ff_scflags}" "--extra-ldflags=${_ff_sldflags}")
 endif()
 
+# Windows/MSYS only: ffmpeg's configure probes break on a plain Windows host.
+#   --tempprefix=.   Git Bash's `mktemp -d` hands back a path MSYS cannot write
+#                    into ("Unable to create temporary file in /tmp/ffconf.*").
+#                    ffmpeg's own escape hatch keeps the probe files relative.
+#   --host-cc=...    A plain Windows box has no host gcc/g++, so ffmpeg's host
+#                    C11 probe fails. Building libs only *compiles* those probes
+#                    (never executes them), so the NDK clang satisfies the check.
+# On Linux both are counterproductive: --host-cc would point the host probes at
+# the *target* compiler, and /tmp works fine.
+if(CMAKE_HOST_WIN32)
+    set(_ffmpeg_host_workarounds
+        --tempprefix=.
+        --host-cc=${_ffmpeg_tc}/${_ffmpeg_triple}${AIRPLAY_ANDROID_API}-clang
+    )
+    # configure writes MSYS drive paths into its generated files, but the NDK's
+    # make.exe is a native Windows binary and cannot resolve them.
+    set(_ffmpeg_fix_paths
+        COMMAND ${CMAKE_COMMAND}
+            -DWORKDIR=${CMAKE_BINARY_DIR}/ffmpeg-ep/src/ffmpeg_ep-build
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FixFfmpegPaths.cmake
+    )
+else()
+    set(_ffmpeg_host_workarounds "")
+    set(_ffmpeg_fix_paths "")
+endif()
+
 ExternalProject_Add(ffmpeg_ep
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ffmpeg
     DOWNLOAD_COMMAND ""
@@ -62,6 +88,7 @@ ExternalProject_Add(ffmpeg_ep
     INSTALL_DIR ${FFMPEG_INSTALL}
     CONFIGURE_COMMAND ${FFMPEG_BASH} <SOURCE_DIR>/configure
         --prefix=<INSTALL_DIR>
+        ${_ffmpeg_host_workarounds}
         --target-os=android --arch=${_ffmpeg_arch} ${_ffmpeg_cpu} --enable-cross-compile
         --cc=${_ffmpeg_tc}/${_ffmpeg_triple}${AIRPLAY_ANDROID_API}-clang
         --cxx=${_ffmpeg_tc}/${_ffmpeg_triple}${AIRPLAY_ANDROID_API}-clang++
@@ -72,8 +99,11 @@ ExternalProject_Add(ffmpeg_ep
         --disable-all --disable-debug --disable-network --disable-autodetect
         --enable-avcodec --enable-decoder=alac,aac --enable-static --disable-shared
         ${_ffmpeg_sanitize}
+    ${_ffmpeg_fix_paths}
     BUILD_COMMAND ${FFMPEG_MAKE} -j${_ffmpeg_jobs}
-    INSTALL_COMMAND ${FFMPEG_MAKE} install
+    # Not `make install`: see cmake/InstallFFmpeg.sh for why.
+    INSTALL_COMMAND ${FFMPEG_BASH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/InstallFFmpeg.sh
+        <SOURCE_DIR> <BINARY_DIR> <INSTALL_DIR>
     BUILD_BYPRODUCTS ${FFMPEG_INSTALL}/lib/libavcodec.a ${FFMPEG_INSTALL}/lib/libavutil.a
     LOG_CONFIGURE TRUE
     LOG_BUILD TRUE

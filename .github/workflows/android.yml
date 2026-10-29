@@ -47,7 +47,7 @@ jobs:
           echo "using $SDKMGR"
           yes | "$SDKMGR" --licenses > /dev/null || true
           "$SDKMGR" --install \
-            "platforms;android-37" \
+            "platforms;android-37.0" \
             "build-tools;36.0.0" \
             "ndk;27.0.12077973"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"

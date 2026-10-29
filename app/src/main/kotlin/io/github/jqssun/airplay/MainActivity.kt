@@ -17,6 +17,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -172,6 +173,10 @@ class MainActivity : ComponentActivity() {
         enterPictureInPictureMode(_pipParams())
     }
 
+    // Both call sites are gated (enterPip() returns below O, the observer sits
+    // behind SDK_INT >= S), but lint cannot see across the function boundary and
+    // minSdk is 24 — so state the requirement instead of relying on the caller.
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun _pipParams(): PictureInPictureParams {
         val aspect = if (viewModel.videoPlaybackActive.value) viewModel.videoPlaybackAspect.value
             else viewModel.videoAspect.value

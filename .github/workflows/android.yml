@@ -82,6 +82,26 @@ jobs:
           find app/build/outputs/apk/release -name '*.apk' -exec cp {} out/ \;
           ls -l out/
 
+      # Lint reports ~30 pre-existing findings that have nothing to do with device
+      # compatibility, so this gates on NewApi only. A call above minSdk is the one
+      # finding that silently turns into a crash on an older device — exactly what
+      # minSdk 24 for Fire OS 6 risks.
+      - name: Lint (NewApi gate)
+        run: |
+          ./gradlew :app:lintRelease --no-daemon || true
+          REPORT=$(find app/build -name 'lint-results-release.txt' | head -1)
+          echo "report: $REPORT"
+          if [ -z "$REPORT" ]; then
+            echo "::error::lint report not found"
+            exit 1
+          fi
+          if grep -q '\[NewApi\]' "$REPORT"; then
+            grep -n '\[NewApi\]' -B2 "$REPORT" || true
+            echo "::error::NewApi violation — code calls an API above minSdk"
+            exit 1
+          fi
+          echo "no NewApi violations"
+
       - name: Verify ABIs and SDK levels
         run: |
           AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort | tail -1)

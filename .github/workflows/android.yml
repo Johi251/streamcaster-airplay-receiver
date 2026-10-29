@@ -37,17 +37,21 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      # compileSdk 37 and NDK 27 are not part of the runner image.
+      # The runner image already ships an Android SDK with cmdline-tools.
+      # android-actions/setup-android@v3 is not used: it still tries to install
+      # the retired legacy "tools" package and aborts.
       - name: Install SDK packages
         run: |
-          yes | sdkmanager --licenses > /dev/null
-          sdkmanager --install \
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMGR=$(find "$SDK/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
+          echo "using $SDKMGR"
+          yes | "$SDKMGR" --licenses > /dev/null || true
+          "$SDKMGR" --install \
             "platforms;android-37" \
             "build-tools;36.0.0" \
             "ndk;27.0.12077973"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
 
       - name: Cache Gradle
         uses: gradle/actions/setup-gradle@v4

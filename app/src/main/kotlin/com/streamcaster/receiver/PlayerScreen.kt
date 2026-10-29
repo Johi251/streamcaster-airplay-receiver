@@ -150,14 +150,14 @@ fun PlayerScreen(player: ExoPlayer, title: String, error: String?) {
                 Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(Color(0x33FFFFFF), RoundedCornerShape(999))
+                    .background(Color(0x33FFFFFF), RoundedCornerShape(999.dp))
             ) {
                 val fraction = if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f
                 Box(
                     Modifier
                         .fillMaxWidth(fraction)
                         .height(4.dp)
-                        .background(Brand.Accent, RoundedCornerShape(999))
+                        .background(Brand.Accent, RoundedCornerShape(999.dp))
                 )
             }
             Spacer(Modifier.height(10.dp))

@@ -230,7 +230,7 @@ private fun StatusCard(
             Box(
                 Modifier
                     .size(9.dp)
-                    .background(color, RoundedCornerShape(999))
+                    .background(color, RoundedCornerShape(999.dp))
             )
             Spacer(Modifier.width(12.dp))
             Column {

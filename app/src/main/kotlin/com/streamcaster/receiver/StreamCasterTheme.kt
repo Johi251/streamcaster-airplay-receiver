@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** Palette shared with the StreamCaster web app (apps/sender/public/style.css). */
@@ -25,9 +26,13 @@ object Brand {
     val Ok = Color(0xFF7CE38B)
     val Warn = Color(0xFFFFD479)
     val Danger = Color(0xFFFF5F6D)
-    val CodeShape = RoundedCornerShape(28)
-    val CardShape = RoundedCornerShape(20)
-    val PillShape = RoundedCornerShape(999)
+    // `.dp` matters: RoundedCornerShape has a second overload taking an Int
+    // *percent*, and a bare literal like 999 binds to it. CornerSize(percent)
+    // requires 0..100, so `RoundedCornerShape(999)` threw in this object's static
+    // initializer and the app died before its first frame.
+    val CodeShape = RoundedCornerShape(28.dp)
+    val CardShape = RoundedCornerShape(20.dp)
+    val PillShape = RoundedCornerShape(999.dp)
 }
 
 private val StreamCasterColors = darkColorScheme(

@@ -7,7 +7,7 @@
         <item name="android:colorBackground">#0B0D12</item>
         <item name="android:statusBarColor">#0B0D12</item>
         <item name="android:navigationBarColor">#0B0D12</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
         <!-- API 27+. Older platforms ignore theme attributes they do not know, so
              this can stay in the base file; duplicating the whole style into
              values-v27/ just to move one line would be worse. -->

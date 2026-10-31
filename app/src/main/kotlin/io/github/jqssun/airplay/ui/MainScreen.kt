@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -68,15 +69,8 @@ import io.github.jqssun.airplay.viewmodel.LocalNetworkAccess
 import io.github.jqssun.airplay.viewmodel.MainViewModel
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DataSourceBitmapLoader
-import androidx.media3.ui.compose.material3.MiniController
-import androidx.media3.ui.compose.material3.buttons.NextButton
-import androidx.media3.ui.compose.material3.buttons.PlayPauseButton
-import androidx.media3.ui.compose.material3.buttons.PreviousButton
-import androidx.media3.ui.compose.material3.indicator.DurationText
-import androidx.media3.ui.compose.material3.indicator.PositionText
-import androidx.media3.ui.compose.material3.indicator.ProgressSlider
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -869,17 +863,161 @@ private fun HoldScanButton(
     }
 }
 
+/**
+ * Compact playback bar for the audio-only view.
+ *
+ * This replaces the media3 compose-material3 MiniController: that artifact
+ * only exists from Media3 1.10 on, and Media3 >= 1.9 requires minSdk 23,
+ * which would have ruled out Fire OS 5 sticks (Android 5.1 = API 22).
+ * The stable androidx.media3.common.Player interface is enough for this.
+ */
 @Composable
-@AndroidxOptIn(UnstableApi::class)
 private fun AudioMiniController(viewModel: MainViewModel, visible: Boolean, onClick: () -> Unit) {
     if (!visible) return
     val player = viewModel.dacpPlayer ?: return
-    val context = LocalContext.current
-    MiniController(
-        player,
-        bitmapLoader = remember { DataSourceBitmapLoader.Builder(context).build() },
-        onClick = onClick
-    )
+    var position by remember { mutableStateOf(0L) }
+    var duration by remember { mutableStateOf(0L) }
+    var playing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(player) {
+        while (true) {
+            position = player.currentPosition.coerceAtLeast(0L)
+            duration = player.duration.takeIf { it > 0L } ?: 0L
+            playing = player.isPlaying
+            delay(500)
+        }
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    ) {
+        Row(
+            modifier = Modifier
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            IconButton(
+                onClick = { if (player.isPlaying) player.pause() else player.play() },
+                modifier = Modifier.dpadFocus(CircleShape),
+            ) {
+                Icon(
+                    imageVector = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = stringResource(R.string.cd_play_pause),
+                )
+            }
+            Text(
+                text = if (duration > 0L) {
+                    "${formatMs(position)} / ${formatMs(duration)}"
+                } else {
+                    formatMs(position)
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Slider(
+                value = position.toFloat().coerceIn(0f, duration.coerceAtLeast(1L).toFloat()),
+                onValueChange = { player.seekTo(it.toLong()) },
+                valueRange = 0f..duration.coerceAtLeast(1L).toFloat(),
+                modifier = Modifier
+                    .weight(1f)
+                    .dpadFocus(),
+            )
+        }
+    }
+}
+
+private fun formatMs(ms: Long): String {
+    val total = (ms / 1000).coerceAtLeast(0)
+    val m = total / 60
+    val s = total % 60
+    return "%d:%02d".format(m, s)
+}
+
+/**
+ * Position / progress / duration row, built on the stable Player interface.
+ * See AudioMiniController for why the media3 compose-material3 widgets are
+ * not used here.
+ */
+@Composable
+private fun PlayerProgressRow(player: Player) {
+    var position by remember { mutableStateOf(0L) }
+    var duration by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(player) {
+        while (true) {
+            position = player.currentPosition.coerceAtLeast(0L)
+            duration = player.duration.takeIf { it > 0L } ?: 0L
+            delay(500)
+        }
+    }
+
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = formatMs(position),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(end = 8.dp),
+        )
+        Slider(
+            value = position.toFloat().coerceIn(0f, duration.coerceAtLeast(1L).toFloat()),
+            onValueChange = { player.seekTo(it.toLong()) },
+            valueRange = 0f..duration.coerceAtLeast(1L).toFloat(),
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = formatMs(duration),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(start = 8.dp),
+        )
+    }
+}
+
+@Composable
+private fun PlayerPlayPauseButton(player: Player, modifier: Modifier = Modifier, iconSize: Dp = 40.dp) {
+    var playing by remember { mutableStateOf(false) }
+    LaunchedEffect(player) {
+        while (true) {
+            playing = player.isPlaying
+            delay(500)
+        }
+    }
+    IconButton(
+        onClick = { if (player.isPlaying) player.pause() else player.play() },
+        modifier = modifier,
+    ) {
+        Icon(
+            imageVector = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+            contentDescription = stringResource(R.string.cd_play_pause),
+            modifier = Modifier.size(iconSize),
+        )
+    }
+}
+
+@Composable
+private fun PlayerPreviousButton(player: Player, modifier: Modifier = Modifier) {
+    IconButton(onClick = { player.seekTo(0L) }, modifier = modifier) {
+        Icon(
+            imageVector = Icons.Default.SkipPrevious,
+            contentDescription = stringResource(R.string.cd_play_pause),
+        )
+    }
+}
+
+@Composable
+private fun PlayerNextButton(player: Player, modifier: Modifier = Modifier) {
+    IconButton(
+        onClick = { if (player.hasNextMediaItem()) player.seekToNextMediaItem() },
+        modifier = modifier,
+    ) {
+        Icon(
+            imageVector = Icons.Default.SkipNext,
+            contentDescription = stringResource(R.string.cd_play_pause),
+        )
+    }
 }
 
 @Composable
@@ -955,11 +1093,7 @@ private fun NowPlayingContent(viewModel: MainViewModel) {
         val player = viewModel.dacpPlayer
         if (player != null) {
             // BottomControls' default row, minus its video-overlay gradient
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PositionText(player, Modifier.padding(end = 8.dp))
-                Box(modifier = Modifier.weight(1f)) { ProgressSlider(player) }
-                DurationText(player, Modifier.padding(start = 8.dp))
-            }
+            PlayerProgressRow(player)
 
             Spacer(Modifier.height(8.dp))
 
@@ -974,13 +1108,13 @@ private fun NowPlayingContent(viewModel: MainViewModel) {
                     onBegin = { viewModel.audioScanBegin(false) },
                     onEnd = { viewModel.audioScanEnd() }
                 )
-                PreviousButton(player, modifier = Modifier.dpadFocus())
-                PlayPauseButton(
+                PlayerPreviousButton(player, modifier = Modifier.dpadFocus())
+                PlayerPlayPauseButton(
                     player,
                     modifier = Modifier.size(63.dp).dpadFocus(CircleShape),
                     iconSize = 40.dp
                 )
-                NextButton(player, modifier = Modifier.dpadFocus())
+                PlayerNextButton(player, modifier = Modifier.dpadFocus())
                 HoldScanButton(
                     icon = Icons.Default.FastForward,
                     contentDescription = stringResource(R.string.cd_fast_forward),

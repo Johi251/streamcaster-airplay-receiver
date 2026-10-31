@@ -31,18 +31,31 @@ android {
                 storePassword = localProps.getProperty("storePassword")
                 keyAlias = localProps.getProperty("keyAlias")
                 keyPassword = localProps.getProperty("keyPassword")
+                // v1 (JAR signing) is mandatory below API 24: Android 5.x/6.x
+                // cannot read the v2/v3 signature block and abort the install
+                // with INSTALL_PARSE_FAILED_NO_CERTIFICATES ("Problem beim
+                // Parsen des Pakets"). v2 stays on for API 24+, v3 for API 28+.
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
 
     defaultConfig {
         applicationId = "com.streamcaster.receiver"
-        // Fire OS 6 (Fire TV Stick 4K 1st gen) is Android 7.1.2 = API 25, so
-        // minSdk 28 made the package fail to parse there. 24 covers Fire OS 6/7/8.
-        minSdk = 24
+        // Device coverage, oldest first:
+        //   Fire OS 5  (Fire TV Stick 1st gen / Lite) = Android 5.1.1 = API 22
+        //   Fire OS 6  (Fire TV Stick 4K 1st gen)     = Android 7.1.2 = API 25
+        //   Fire OS 7/8                               = API 28/29
+        // minSdk 28 made the package fail to parse on Fire OS 6; 24 was still
+        // one step too high for Fire OS 5 sticks. 22 is the lowest level that
+        // still gets v1 signing, and the NewApi lint gate in CI keeps every
+        // API-23+ call out of the code path.
+        minSdk = 22
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
 
         externalNativeBuild {
             cmake {
